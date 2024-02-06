@@ -49,7 +49,7 @@ def capture_plate(plate_count, img_roi, reader):
                                     str1 = str1.upper()
                                     if len(str1) >= 6:
                                         if str1 in known_plates:
-                                            if dupliplate_started[1]:
+                                            if dupliplate_started:
                                                 print("PLATE ALREADY RECORDED")
                                                 return False
                                             else:
