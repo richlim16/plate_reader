@@ -124,20 +124,47 @@
 
 import cv2
 from pyzbar.pyzbar import decode
-import time
+from time import time
 
-cam = cv2.VideoCapture(0)
+cam = cv2.VideoCapture(1)
 cam.set(3, 640)
 cam.set(4, 480)
+
+timeout = 5
+known_plates = [["VX9153", 0]]
 
 camera = True
 while camera == True:
     success, frame = cam.read()
 
+    cv2.imshow("FRAME", frame)
+
     for i in decode(frame):
-        print(i.type)
-        print(i.data.decode('utf-8'))
-        time.sleep(5)
+        # print(i.type)
+        # print(i.data.decode('utf-8'))
+        str1 = i.data.decode('utf-8')
+        index = 0
+
+        while index < len(known_plates):
+            if known_plates[index][0] == str1:
+                if time() - known_plates[index][1] > timeout:
+                    known_plates[index][1] = time()
+                    print("Plate "+str1+" recorded"+str(time()))
+                else:
+                    # print("Plate "+str1+" IGNORED")
+                    break
+            else:
+                index += 1
+
+        if index == len(known_plates):
+            print("appending "+str1)
+            known_plates.append([str1, time()])
+            break
 
         cv2.imshow("QR Scanner", frame)
-        cv2.waitKey(3)
+
+    if cv2.waitKey(1) & 0xFF == ord('x'):
+        break
+
+cam.release()
+cv2.destroyAllWindows()
