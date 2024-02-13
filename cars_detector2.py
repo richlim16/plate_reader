@@ -4,7 +4,6 @@
 
 import cv2
 from paddleocr import PaddleOCR
-import pytesseract
 from time import time
 from glob import glob
 import numpy as np
@@ -96,14 +95,15 @@ while True:
 
                     plates = plate_detector.detectMultiScale(car_frame, 1.05, 4)
 
-                    for (a, b, c, d) in plates:
-                        a = x+a
-                        b = y+b
-                        # cv2.putText(frame, "Plate", (a,b-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
-                        cv2.rectangle(frame, (a, b), (a+c, b+d), (255, 0, 0), 1) 
-                        output = reader.ocr(car_frame)
-                        capture_plate(count, car_frame, output)
-                        count+=1
+                    if (len(plates) > 0):
+                        for (a, b, c, d) in plates:
+                            a = x+a
+                            b = y+b
+                            # cv2.putText(frame, "Plate", (a,b-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
+                            cv2.rectangle(frame, (a, b), (a+c, b+d), (255, 0, 0), 1) 
+                            output = reader.ocr(car_frame)
+                            capture_plate(count, car_frame, output)
+                            count+=1
 
                 
 
