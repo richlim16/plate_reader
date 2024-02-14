@@ -2,10 +2,15 @@ import cv2
 from paddleocr import PaddleOCR
 from IPython.display import Image
 from time import time
+import winsound
+from ultralytics import YOLO
 
-detector = cv2.CascadeClassifier("model/haarcascade_russian_plate_number.xml")
+model = YOLO("./model/another.pt")
+# results = model.predict(source="0", show=True)
 
-cap = cv2.VideoCapture(1)
+# detector = cv2.CascadeClassifier("model/haarcascade_russian_plate_number.xml")
+
+cap = cv2.VideoCapture(0)
 cap.set(3, 640)  # height
 cap.set(4, 480) # height
 min_area = 0
@@ -44,6 +49,7 @@ def capture_plate(plate_count, img_roi, reader):
                                     str1 = str1.replace(" ","")
                                     str1 = str1.upper()
                                     if str1 in known_plates:
+                                        winsound.PlaySound('detected_alt.wav', winsound.SND_FILENAME)
                                         print(" Plate Recognized! "+str1)
 
 
