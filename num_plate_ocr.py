@@ -1,36 +1,28 @@
-import cv2
-from paddleocr import PaddleOCR
-from IPython.display import Image
 from time import time
-import winsound
+import math
 from ultralytics import YOLO
+from paddleocr import PaddleOCR
+import cv2
+import cvzone
 
-model = YOLO("./model/another.pt")
-# results = model.predict(source="0", show=True)
+cap = cv2.VideoCapture('video_60fps.mp4')
 
-# detector = cv2.CascadeClassifier("model/haarcascade_russian_plate_number.xml")
+model = YOLO('./model/another.pt')
+classnames = ['license-plate','vehicle']
+reader = PaddleOCR(lang='en', show_log=False, use_angle_cls=True)
 
-cap = cv2.VideoCapture(0)
-cap.set(3, 640)  # height
-cap.set(4, 480) # height
-min_area = 0
-
-in_time = 0
 it_started = False
-out_time = 0
 ot_started = False
-plate_found = False
+car_found = False
+in_time = 0
+out_time = 0
 ot_timeout = 3
-it_timeout = 2
-plate_count = 0
+it_timeout = 1
+timeout = 5
+plate_num = ''
+known_plates=[]
 
-reader = PaddleOCR(lang='en')
-known_plates = ["Y10477", "GAP3520"]
-
-def capture_plate(plate_count, img_roi, reader):
-    cv2.imwrite("plates/scanned_img_" + str(plate_count) + ".jpg", img_roi)
-    output = reader.ocr('plates/scanned_img_' + str(plate_count) + '.jpg')
-
+def capture_plate(output):
     for out in output:
         if out is None:
             pass
@@ -43,65 +35,56 @@ def capture_plate(plate_count, img_roi, reader):
                         if o is None:
                             pass
                         else:
-                            for x in o: #out[0][1][0]
+                            for x in o:
                                 if isinstance(x, str):
                                     str1 = x
-                                    str1 = str1.replace(" ","")
+                                    str1 = str1.replace(" ","") #remove spaces
                                     str1 = str1.upper()
-                                    if str1 in known_plates:
-                                        winsound.PlaySound('detected_alt.wav', winsound.SND_FILENAME)
-                                        print(" Plate Recognized! "+str1)
+                                    if len(str1) >= 6:
+                                        index = 0
 
+                                        while index < len(known_plates):
+                                            if known_plates[index][0] == str1:
+                                                if time() - known_plates[index][1] > timeout:
+                                                    known_plates[index][1] = time()
+                                                    print("Plate "+str1+" recorded")
+                                                    return str1
+                                                else:
+                                                    print("Plate "+str1+" IGNORED")
+                                                    return str1
+                                            else:
+                                                index += 1
+
+                                        if index == len(known_plates):
+                                            known_plates.append([str1, time()])
+                                            print("appending "+str1)
+                                            return str1
 
 while True:
     ret, frame = cap.read()
+    frame = cv2.resize(frame, (1080,720))
+    results = model(frame)
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    threshold_img = cv2.threshold(gray, 0, 255, cv2.THRESH_TOZERO)[1]
-    plates = detector.detectMultiScale(threshold_img, 1.05, 4)
+    for info in results:
+        parameters = info.boxes
+        for box in parameters:
+            x1, y1, x2, y2 = box.xyxy[0]
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+            confidence = box.conf[0]
+            class_detect = box.cls[0]
+            class_detect = int(class_detect)
+            class_detect = classnames[class_detect]
+            conf = math.ceil(confidence * 100)
+            if conf > 50 and class_detect == 'license-plate':
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                car_frame = frame[y1:y2, x1:x2]
+                output = reader.ocr(car_frame)
+                plate_num = capture_plate(output)
+                cvzone.putTextRect(frame, f'{plate_num}', [x1 + 8, y1 - 12], thickness=1, scale=1)
 
-    if(len(plates) > 0):
-        plate_found = True
-        for (x, y, w, h) in plates:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 255), 2)
-    else:
-        plate_found = False
-
-    # Timer Started
-    if plate_found and not it_started:
-        in_time = time()
-        it_started = True
-
-    elif not plate_found and not ot_started:
-        out_time = time()
-        ot_started = True
-
-    elif plate_found and it_started:
-        # if plate found longer than timeout
-        if time() - in_time >= it_timeout:
-
-            for (x, y, w, h) in plates:
-                area = w * h
-
-                if area > min_area:
-                    cv2.putText(frame, "License Plate", (x, y-5), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (255, 0, 255), 2)
-                    img_roi = gray[y: y+h, x: x+w]
-                    cv2.imshow("License Plate", img_roi)
-                    capture_plate(plate_count, img_roi, reader)
-                    plate_count += 1
-                    ot_started = False
-                    it_started = False
-
-    # timed out
-    elif ot_started and time() - out_time >= ot_timeout:
-        it_started = False
-        ot_started = False
-
-    cv2.imshow("Camera", frame)
-
+    cv2.imshow('video', frame)
     if cv2.waitKey(1) & 0xFF == ord('x'):
         break
 
 cap.release()
 cv2.destroyAllWindows()
-   
