@@ -137,9 +137,9 @@ camera = True
 while camera == True:
     success, frame = cam.read()
 
-    cv2.imshow("FRAME", frame)
-
     for i in decode(frame):
+        x, y, w, h = i.rect
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
         # print(i.type)
         # print(i.data.decode('utf-8'))
         str1 = i.data.decode('utf-8')
@@ -161,7 +161,7 @@ while camera == True:
             known_plates.append([str1, time()])
             break
 
-        cv2.imshow("QR Scanner", frame)
+    cv2.imshow("QR Scanner", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('x'):
         break

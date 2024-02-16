@@ -5,7 +5,7 @@ from paddleocr import PaddleOCR
 import cv2
 import cvzone
 
-cap = cv2.VideoCapture('sample_vid_mini_1.mp4')
+cap = cv2.VideoCapture(0)
 model = YOLO('./model/yolov8Cars&Plate2.pt')
 classnames = ['license-plate','vehicle']
 reader = PaddleOCR(lang='en', show_log=False, use_angle_cls=True)
@@ -18,7 +18,7 @@ ot_timeout = 1
 it_timeout = 3
 timeout = 5
 plate_num = ''
-known_plates=[]
+known_plates=[["GAP3520", 0]]
 
 def capture_plate(output):
     for out in output:
@@ -36,7 +36,7 @@ def capture_plate(output):
                             for x in o:
                                 if isinstance(x, str):
                                     str1 = x
-                                    str1 = str1.replace(" ","") #remove spaces
+                                    str1 = str1.replace(" ","")
                                     str1 = str1.upper()
                                     if len(str1) >= 6:
                                         index = 0
@@ -60,9 +60,8 @@ def capture_plate(output):
 while True:
     ret, frame = cap.read()
     if ret:
-        frame = cv2.resize(frame, (1080, 720))
+        # frame = cv2.resize(frame, (1080, 720))
         results = model(frame, verbose=False)
-
         for info in results:
             parameters = info.boxes
             for box in parameters:

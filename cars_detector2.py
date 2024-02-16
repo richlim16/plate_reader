@@ -12,8 +12,8 @@ car_detector = cv2.CascadeClassifier("model/cars2.xml")
 plate_detector = cv2.CascadeClassifier("model/haarcascade_russian_plate_number.xml")
 reader = PaddleOCR(lang='en', show_log=False, use_angle_cls=True)
 
-cap = cv2.VideoCapture("video_3_30fps.mp4")
-# cap = cv2.VideoCapture(0)
+# cap = cv2.VideoCapture("video_3_30fps.mp4")
+cap = cv2.VideoCapture(1)
 min_size = 000
 count = len(glob("plates/*"))
 
